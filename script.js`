@@ -1,0 +1,414 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Splash & Welcome Screen Logic ---
+    const splashScreen = document.getElementById('splash-screen');
+    const appShell = document.getElementById('app-shell');
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const enterAppBtn = document.getElementById('enter-app-btn');
+
+    setTimeout(() => {
+        splashScreen.style.opacity = '0';
+        splashScreen.style.visibility = 'hidden';
+        if (welcomeScreen) {
+            welcomeScreen.classList.add('visible');
+        } else {
+            appShell.classList.add('visible');
+        }
+    }, 2500);
+
+    if (enterAppBtn) {
+        enterAppBtn.addEventListener('click', () => {
+            if (welcomeScreen) {
+                welcomeScreen.style.opacity = '0';
+                welcomeScreen.style.visibility = 'hidden';
+            }
+            appShell.classList.add('visible');
+        });
+    }
+
+    // --- State Management ---
+    let state = {
+        tasks: JSON.parse(localStorage.getItem('fh-tasks')) || [],
+        goals: JSON.parse(localStorage.getItem('fh-goals')) || [],
+        sessions: parseInt(localStorage.getItem('fh-sessions')) || 0,
+        notes: JSON.parse(localStorage.getItem('fh-notes')) || [],
+        userName: localStorage.getItem('fh-user-name') || 'Elite Mode'
+    };
+
+    const saveState = () => {
+        localStorage.setItem('fh-tasks', JSON.stringify(state.tasks));
+        localStorage.setItem('fh-goals', JSON.stringify(state.goals));
+        localStorage.setItem('fh-sessions', state.sessions.toString());
+        localStorage.setItem('fh-notes', JSON.stringify(state.notes));
+        localStorage.setItem('fh-user-name', state.userName);
+        updateStats();
+    };
+
+    // --- Routing Engine ---
+    const railItems = document.querySelectorAll('.rail-item');
+    const modulePanes = document.querySelectorAll('.module-pane');
+    const contextContents = document.querySelectorAll('.context-content');
+
+    const switchModule = (moduleId) => {
+        railItems.forEach(item => {
+            item.classList.toggle('active', item.getAttribute('data-module') === moduleId);
+        });
+
+        modulePanes.forEach(pane => {
+            pane.classList.toggle('active', pane.id === moduleId);
+        });
+
+        const contextId = moduleId.replace('module-', 'context-');
+        contextContents.forEach(content => {
+            content.classList.toggle('active', content.id === contextId);
+        });
+
+        if (moduleId === 'module-analytics') updateStats();
+    };
+
+    railItems.forEach(item => {
+        item.addEventListener('click', () => {
+            switchModule(item.getAttribute('data-module'));
+        });
+    });
+
+    switchModule('module-planning');
+
+    // --- Utils ---
+    const updateDate = () => {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const today = new Date().toLocaleDateString('es-ES', options);
+        document.getElementById('current-date').innerText = today;
+    };
+    updateDate();
+
+    // --- Analytics Logic ---
+    let totalChart, dailyChart;
+
+    const updateStats = () => {
+        const totalTasks = state.tasks.length;
+        const completedTasks = state.tasks.filter(t => t.completed).length;
+        const totalGoals = state.goals.length;
+        const completedGoals = state.goals.filter(g => g.completed).length;
+        const combinedTotal = totalTasks + totalGoals;
+        const combinedCompleted = completedTasks + completedGoals;
+        const combinedPending = combinedTotal - combinedCompleted;
+
+        if (document.getElementById('stat-pending')) {
+            document.getElementById('stat-pending').innerText = combinedPending;
+        }
+        if (document.getElementById('stat-total-progress')) {
+            const totalPercent = combinedTotal > 0 ? Math.round((combinedCompleted / combinedTotal) * 100) : 0;
+            document.getElementById('stat-total-progress').innerText = `${totalPercent}%`;
+            updateChart(totalChart, totalPercent, '#00f2ff');
+        }
+        if (document.getElementById('stat-daily-progress')) {
+            const dailyPercent = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0;
+            document.getElementById('stat-daily-progress').innerText = `${dailyPercent}%`;
+            updateChart(dailyChart, dailyPercent, '#39ff14');
+        }
+        if (document.getElementById('stat-daily-count')) {
+            document.getElementById('stat-daily-count').innerText = `${completedGoals}/${totalGoals}`;
+        }
+
+        if (document.getElementById('ctx-stat-pending')) {
+            document.getElementById('ctx-stat-pending').innerText = combinedPending;
+        }
+        if (document.getElementById('ctx-stat-progress')) {
+            const totalPercent = combinedTotal > 0 ? Math.round((combinedCompleted / combinedTotal) * 100) : 0;
+            document.getElementById('ctx-stat-progress').innerText = `${totalPercent}%`;
+        }
+    };
+
+    const createChart = (canvasId, options = {}) => {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return null;
+        return new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [0, 100],
+                    backgroundColor: options.colors || ['#00f2ff', '#1a202c'],
+                    borderWidth: 0,
+                    cutout: options.cutout || '85%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                animation: { duration: 1000, easing: 'easeOutQuart' }
+            }
+        });
+    };
+
+    const updateChart = (chart, percent, baseColor = '#00f2ff') => {
+        if (!chart) return;
+        chart.data.datasets[0].data = [percent, 100 - percent];
+        chart.data.datasets[0].backgroundColor = [baseColor, '#1a202c'];
+        chart.update();
+    };
+
+    const initCharts = () => {
+        totalChart = createChart('totalProgressChart', { cutout: '80%', colors: ['#00f2ff', '#1a202c'] });
+        dailyChart = createChart('dailyProgressChart', { cutout: '90%', colors: ['#39ff14', '#1a202c'] });
+    };
+
+    // --- Planning Logic ---
+    const taskInput = document.getElementById('task-input');
+    const taskPriority = document.getElementById('task-priority');
+    const addTaskBtn = document.getElementById('add-task-btn');
+
+    const renderTasks = () => {
+        const lists = {
+            q1: document.getElementById('list-q1'),
+            q2: document.getElementById('list-q2'),
+            q3: document.getElementById('list-q3'),
+            q4: document.getElementById('list-q4')
+        };
+        Object.values(lists).forEach(l => { if(l) l.innerHTML = ''; });
+        state.tasks.forEach((task, index) => {
+            const li = document.createElement('li');
+            li.className = 'task-item';
+            li.innerHTML = `
+                <div class="task-content">
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} data-index="${index}">
+                    <span class="${task.completed ? 'completed' : ''}">${task.text}</span>
+                </div>
+                <button class="delete-task" data-index="${index}">Eliminar</button>
+            `;
+            li.querySelector('input').addEventListener('change', (e) => {
+                state.tasks[index].completed = e.target.checked;
+                saveState();
+                renderTasks();
+            });
+            li.querySelector('.delete-task').addEventListener('click', () => {
+                state.tasks.splice(index, 1);
+                saveState();
+                renderTasks();
+            });
+            if (lists[task.priority]) lists[task.priority].appendChild(li);
+        });
+    };
+
+    addTaskBtn.addEventListener('click', () => {
+        const text = taskInput.value.trim();
+        if (!text) return;
+        state.tasks.push({ text, priority: taskPriority.value, completed: false });
+        taskInput.value = '';
+        saveState();
+        renderTasks();
+    });
+
+    const goalInput = document.getElementById('goal-input');
+    const addGoalBtn = document.getElementById('add-goal-btn');
+    const goalsList = document.getElementById('goals-list');
+
+    const renderGoals = () => {
+        goalsList.innerHTML = '';
+        state.goals.forEach((goal, index) => {
+            const li = document.createElement('li');
+            li.className = 'goal-item';
+            li.innerHTML = `
+                <div class="goal-content">
+                    <input type="checkbox" ${goal.completed ? 'checked' : ''} data-index="${index}">
+                    <span class="${goal.completed ? 'completed' : ''}">${goal.text}</span>
+                </div>
+                <button class="delete-goal" data-index="${index}">Eliminar</button>
+            `;
+            li.querySelector('input').addEventListener('change', (e) => {
+                state.goals[index].completed = e.target.checked;
+                saveState();
+                renderGoals();
+            });
+            li.querySelector('.delete-goal').addEventListener('click', () => {
+                state.goals.splice(index, 1);
+                saveState();
+                renderGoals();
+            });
+            goalsList.appendChild(li);
+        });
+    };
+
+    addGoalBtn.addEventListener('click', () => {
+        const text = goalInput.value.trim();
+        if (!text) return;
+        state.goals.push({ text, completed: false });
+        goalInput.value = '';
+        saveState();
+        renderGoals();
+    });
+
+    // --- Focus Logic ---
+    let timerInterval;
+    let timeLeft = 1500;
+    let isRunning = false;
+    const timerMin = document.getElementById('timer-minutes');
+    const timerSec = document.getElementById('timer-seconds');
+    const totalPomodorosEl = document.getElementById('total-pomodoros');
+    const startBtn = document.getElementById('timer-start');
+    const pauseBtn = document.getElementById('timer-pause');
+    const resetBtn = document.getElementById('timer-reset');
+    const modeBtns = document.querySelectorAll('.mode-btn');
+
+    const updateTimerDisplay = () => {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        timerMin.innerText = m.toString().padStart(2, '0');
+        timerSec.innerText = s.toString().padStart(2, '0');
+    };
+
+    const startTimer = () => {
+        if (isRunning) return;
+        isRunning = true;
+        startBtn.disabled = true;
+        startBtn.innerText = 'En curso...';
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                isRunning = false;
+                startBtn.disabled = false;
+                startBtn.innerText = 'Iniciar';
+                state.sessions++;
+                saveState();
+                updatePomodoroCounter();
+                alert('¡Sesión completada! Tiempo de descanso.');
+            }
+        }, 1000);
+    };
+
+    const pauseTimer = () => {
+        clearInterval(timerInterval);
+        isRunning = false;
+        startBtn.disabled = false;
+        startBtn.innerText = 'Iniciar';
+    };
+
+    const resetTimer = () => {
+        pauseTimer();
+        const activeMode = document.querySelector('.mode-btn.active');
+        timeLeft = activeMode ? parseInt(activeMode.getAttribute('data-time')) : 1500;
+        updateTimerDisplay();
+    };
+
+    startBtn.addEventListener('click', startTimer);
+    pauseBtn.addEventListener('click', pauseTimer);
+    resetBtn.addEventListener('click', resetTimer);
+
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            modeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            timeLeft = parseInt(btn.getAttribute('data-time'));
+            pauseTimer();
+            updateTimerDisplay();
+        });
+    });
+
+    const updatePomodoroCounter = () => {
+        if (totalPomodorosEl) totalPomodorosEl.innerText = state.sessions;
+    };
+
+    // --- Knowledge Vault Logic ---
+    const newNoteBtn = document.getElementById('new-note-btn');
+    const notesList = document.getElementById('notes-list');
+    const notesGrid = document.getElementById('notes-grid');
+
+    const renderNotes = () => {
+        if (!notesList || !notesGrid) return;
+        notesList.innerHTML = '';
+        notesGrid.innerHTML = '';
+        state.notes.forEach((note, index) => {
+            const pill = document.createElement('li');
+            pill.className = 'note-pill';
+            pill.innerText = note.text.substring(0, 20) + (note.text.length > 20 ? '...' : '');
+            pill.addEventListener('click', () => alert(`Nota: ${note.text}`));
+            notesList.appendChild(pill);
+
+            const card = document.createElement('div');
+            card.className = 'note-card';
+            card.innerHTML = `
+                <div class="note-header">${note.title || 'Sin título'}</div>
+                <div class="note-body">${note.text}</div>
+                <button class="delete-note" style="margin-top:10px; color:var(--primary); background:none; border:none; cursor:pointer;">Eliminar</button>
+            `;
+            card.querySelector('.delete-note').addEventListener('click', (e) => {
+                e.stopPropagation();
+                state.notes.splice(index, 1);
+                saveState();
+                renderNotes();
+            });
+            notesGrid.appendChild(card);
+        });
+    };
+
+    if (newNoteBtn) {
+        newNoteBtn.addEventListener('click', () => {
+            const text = prompt('Escribe tu nota aquí:');
+            if (!text) return;
+            const title = text.split('\n')[0].substring(0, 30);
+            state.notes.push({ title, text });
+            saveState();
+            renderNotes();
+        });
+    }
+
+    // --- Command Center Logic ---
+    const clearDataBtn = document.getElementById('clear-data-btn');
+    const mainUserName = document.getElementById('main-user-name');
+    const userProfileName = document.getElementById('user-profile-name');
+    const themeSelect = document.getElementById('theme-select');
+
+    const updateUserName = () => {
+        if (!mainUserName) return;
+        const name = mainUserName.value;
+        if (userProfileName) userProfileName.value = name;
+        state.userName = name;
+        saveState();
+    };
+
+    if (mainUserName) mainUserName.addEventListener('input', updateUserName);
+    if (userProfileName) {
+        userProfileName.addEventListener('input', (e) => {
+            if (mainUserName) mainUserName.value = e.target.value;
+            updateUserName();
+        });
+    }
+
+    if (themeSelect) {
+        themeSelect.addEventListener('change', (e) => {
+            const theme = e.target.value;
+            if (theme === 'champagne-gold') {
+                document.body.style.setProperty('--primary', '#cbb26a');
+                document.body.style.setProperty('--accent-purple', '#b8860b');
+            } else {
+                document.body.style.setProperty('--primary', '#00f2ff');
+                document.body.style.setProperty('--accent-purple', '#bc13fe');
+            }
+        });
+    }
+
+    if (clearDataBtn) {
+        clearDataBtn.addEventListener('click', () => {
+            if (confirm('¿Estás seguro de borrar todos tus datos?')) {
+                localStorage.clear();
+                state = { tasks: [], goals: [], sessions: 0, notes: [], userName: 'Elite Mode' };
+                saveState();
+                location.reload();
+            }
+        });
+    }
+
+    // Init
+    initCharts();
+    renderTasks();
+    renderGoals();
+    updateTimerDisplay();
+    updateStats();
+    updatePomodoroCounter();
+    renderNotes();
+});

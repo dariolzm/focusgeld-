@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusGeld | Neural OS</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dark-theme">
+    <!-- Welcome Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="logo-animation">
+                <svg width="80" height="80" viewBox="0 0 100 100" class="svg-logo">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="var(--primary)" stroke-width="5" stroke-dasharray="283" stroke-dashoffset="283" class="logo-circle"></circle>
+                    <rect x="42" y="42" width="16" height="16" rx="4" fill="var(--primary)" class="logo-square"></rect>
+                </svg>
+                <h1 class="splash-title">FocusGeld</h1>
+            </div>
+            <div class="splash-loader">
+                <div class="loader-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Entry Screen -->
+    <div id="welcome-screen" class="welcome-screen">
+        <div class="welcome-card">
+            <div class="welcome-icon">
+                <svg width="60" height="60" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="var(--primary)" stroke-width="8"></circle>
+                    <path d="M30 50 L45 65 L70 35" fill="none" stroke="var(--primary)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </div>
+            <h2 class="welcome-title">Sistemas Neurales Activos</h2>
+            <p class="welcome-text">
+                Bienvenido al núcleo de ejecución. <span class="highlight">Disciplina</span> es el algoritmo.
+                El rendimiento es el único resultado aceptable.
+            </p>
+            <button id="enter-app-btn" class="btn-primary large pulse">Sincronizar Neuronas</button>
+        </div>
+    </div>
+
+    <!-- PROFESSIONAL SETUP SCREEN (Onboarding) -->
+    <div id="setup-screen" class="setup-screen">
+        <div class="setup-card">
+            <div class="setup-header">
+                <h2 class="setup-title">Sincronización de Perfil Neural</h2>
+                <p class="setup-subtitle">Configurando parámetros de operador...</p>
+                <div class="setup-progress-container">
+                    <div id="setup-progress-bar" class="setup-progress-bar"></div>
+                </div>
+            </div>
+            <form id="setup-form" class="setup-form">
+                <div class="setup-input-group">
+                    <label for="setup-full-name">Identidad del Operador (Nombre)</label>
+                    <input type="text" id="setup-full-name" required placeholder="Ej. Alex Sterling">
+                </div>
+                <div class="setup-input-group">
+                    <label for="setup-email">Canal de Comunicación (Email)</label>
+                    <input type="email" id="setup-email" required placeholder="operator@neural.os">
+                </div>
+                <div class="setup-input-group">
+                    <label for="setup-mission">Misión Estratégica / Metas Maestro</label>
+                    <textarea id="setup-mission" required placeholder="Define tu objetivo maestro y visión de rendimiento..."></textarea>
+                </div>
+                <button type="submit" id="setup-complete-btn" class="btn-primary">Finalizar Sincronización</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-shell" id="app-shell">
+        <!-- COLUMN 1: Navigation Rail -->
+        <nav class="nav-rail">
+            <div class="rail-header">
+                <div class="logo-small">
+                    <svg width="32" height="32" viewBox="0 0 100 100" class="logo-svg">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="var(--primary)" stroke-width="10"></circle>
+                        <rect x="35" y="35" width="30" height="30" rx="6" fill="var(--primary)"></rect>
+                    </svg>
+                </div>
+            </div>
+            <div class="rail-nav">
+                <button class="rail-item active" data-module="module-planning" title="Blueprint">
+                    <span class="rail-icon">🎯</span>
+                </button>
+                <button class="rail-item" data-module="module-focus" title="Flow State">
+                    <span class="rail-icon">⚡</span>
+                </button>
+                <button class="rail-item" data-module="module-analytics" title="Analytics">
+                    <span class="rail-icon">📈</span>
+                </button>
+                <button class="rail-item" data-module="module-vault" title="Knowledge Vault">
+                    <span class="rail-icon">🧠</span>
+                </button>
+                <button class="rail-item" data-module="module-settings" title="Settings">
+                    <span class="rail-icon">⚙️</span>
+                </button>
+            </div>
+            <div class="rail-footer">
+                <div class="user-status-mini">
+                    <div class="status-dot"></div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- COLUMN 2: Contextual Panel -->
+        <aside class="context-panel">
+            <div id="context-planning" class="context-content active">
+                <div class="context-header">
+                    <h3>Blueprint</h3>
+                    <p>Sincronización Diaria</p>
+                </div>
+                <div class="context-section">
+                    <div class="section-card goals-card">
+                        <div class="card-header">
+                            <h4>Metas Maestras</h4>
+                            <span class="goal-count" id="goal-count">0/0</span>
+                        </div>
+                        <div class="goal-input-group">
+                            <input type="text" id="goal-input" placeholder="Nueva meta...">
+                            <button id="add-goal-btn">+</button>
+                        </div>
+                        <ul class="goals-list" id="goals-list"></ul>
+                    </div>
+                </div>
+                <div class="context-footer">
+                    <div class="date-display" id="current-date"></div>
+                </div>
+            </div>
+
+            <div id="context-focus" class="context-content">
+                <div class="context-header">
+                    <h3>Flow State</h3>
+                    <p>Protocolos de Enfoque</p>
+                </div>
+                <div class="context-section">
+                    <div class="focus-tips-container">
+                        <h4>Directivas</h4>
+                        <div class="focus-tip">"Elimina la fricción. Automatiza la disciplina."</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="context-analytics" class="context-content">
+                <div class="context-header">
+                    <h3>Performance</h3>
+                    <p>Telemetría Neural</p>
+                </div>
+                <div class="context-section">
+                    <div class="quick-stats-card">
+                        <h4>Status Rápido</h4>
+                        <div class="stat-row">
+                            <span>Pendientes:</span>
+                            <span id="ctx-stat-pending" class="stat-val">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>Eficiencia:</span>
+                            <span id="ctx-stat-progress" class="stat-val">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="context-vault" class="context-content">
+                <div class="context-header">
+                    <h3>Knowledge Vault</h3>
+                    <p>Almacén de Datos</p>
+                </div>
+                <div class="context-section">
+                    <div class="vault-controls">
+                        <button id="new-note-btn" class="btn-primary small">Capturar Nota</button>
+                    </div>
+                    <ul class="notes-list" id="notes-list"></ul>
+                </div>
+            </div>
+
+            <div id="context-settings" class="context-content">
+                <div class="context-header">
+                    <h3>Settings</h3>
+                    <p>Control Maestro</p>
+                </div>
+                <div class="context-section">
+                    <div class="settings-group">
+                        <label>Identidad del Operador</label>
+                        <input type="text" id="user-profile-name" value="Elite Mode">
+                    </div>
+                    <div class="settings-group">
+                        <label>Filtro Visual</label>
+                        <select id="theme-select">
+                            <option value="cyber-neon">Cyber Neon</option>
+                            <option value="champagne-gold">Champagne Gold</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- COLUMN 3: Execution Stage -->
+        <main class="execution-area">
+            <!-- MODULE: PLANNING -->
+            <section id="module-planning" class="module-pane active">
+                <header class="page-header">
+                    <div class="header-content">
+                        <h1>Blueprint Estratégico</h1>
+                        <p>Diseño de flujo de trabajo de alta precisión.</p>
+                    </div>
+                </header>
+                <div class="execution-layout">
+                    <div class="priority-section">
+                        <div class="priority-controls">
+                            <div class="task-entry-box">
+                                <input type="text" id="task-input" placeholder="Cargar tarea al sistema...">
+                                <select id="task-priority">
+                                    <option value="q1">Crítico & Urgente</option>
+                                    <option value="q2">Importante, No Urgente</option>
+                                    <option value="q3">Urgente, No Importante</option>
+                                    <option value="q4">Baja Prioridad</option>
+                                </select>
+                                <button id="add-task-btn" class="btn-primary">Ejecutar</button>
+                            </div>
+                        </div>
+                        <div class="eisenhower-grid">
+                            <div class="quadrant q1">
+                                <div class="quad-label">
+                                    <span class="icon">⚡</span>
+                                    <div class="label-text"><strong>EJECUCIÓN</strong><small>Crítico & Urgente</small></div>
+                                </div>
+                                <ul class="task-list" id="list-q1"></ul>
+                            </div>
+                            <div class="quadrant q2">
+                                <div class="quad-label">
+                                    <span class="icon">💎</span>
+                                    <div class="label-text"><strong>ESTRATEGIA</strong><small>Importante, No Urgente</small></div>
+                                </div>
+                                <ul class="task-list" id="list-q2"></ul>
+                            </div>
+                            <div class="quadrant q3">
+                                <div class="quad-label">
+                                    <span class="icon">⚙️</span>
+                                    <div class="label-text"><strong>SISTEMAS</strong><small>Urgente, No Importante</small></div>
+                                </div>
+                                <ul class="task-list" id="list-q3"></ul>
+                            </div>
+                            <div class="quadrant q4">
+                                <div class="quad-label">
+                                    <span class="icon">🗑️</span>
+                                    <div class="label-text"><strong>ELIMINACIÓN</strong><small>Baja Prioridad</small></div>
+                                </div>
+                                <ul class="task-list" id="list-q4"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE: FOCUS -->
+            <section id="module-focus" class="module-pane">
+                <header class="page-header">
+                    <div class="header-content">
+                        <h1>Estado de Flujo</h1>
+                        <p>Eliminación de ruido. Maximización de output.</p>
+                    </div>
+                </header>
+                <div class="focus-container">
+                    <div class="pomodoro-card">
+                        <div class="timer-display">
+                            <span id="timer-minutes">25</span>:<span id="timer-seconds">00</span>
+                        </div>
+                        <div class="timer-controls">
+                            <button id="timer-start" class="btn-primary large">Sincronizar Flujo</button>
+                            <button id="timer-pause" class="btn-secondary large">Pausa</button>
+                            <button id="timer-reset" class="btn-ghost large">Reset</button>
+                        </div>
+                        <div class="timer-modes">
+                            <button class="mode-btn active" data-time="1500">Deep Work</button>
+                            <button class="mode-btn" data-time="300">Recarga</button>
+                            <button class="mode-btn" data-time="900">Enfoque Largo</button>
+                        </div>
+                        <div class="pomodoro-counter">
+                            Ciclos de Elite: <span id="total-pomodoros">0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE: ANALYTICS -->
+            <section id="module-analytics" class="module-pane">
+                <header class="page-header">
+                    <div class="header-content">
+                        <h1>Telemetría de Rendimiento</h1>
+                        <p>Optimización basada en datos reales.</p>
+                    </div>
+                </header>
+                <div class="analytics-circular-layout">
+                    <div class="progress-grid">
+                        <div class="progress-card card-total">
+                            <div class="card-badge">Global</div>
+                            <div class="chart-wrapper">
+                                <div class="chart-container">
+                                    <canvas id="totalProgressChart"></canvas>
+                                    <div class="chart-overlay">
+                                        <span id="stat-total-progress">0%</span>
+                                        <small>Eficiencia</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="stat-pill">
+                                    <span class="stat-label">Pendientes</span>
+                                    <span class="stat-value" id="stat-pending">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="progress-card card-daily">
+                            <div class="card-badge">Diario</div>
+                            <div class="chart-wrapper">
+                                <div class="chart-container small">
+                                    <canvas id="dailyProgressChart"></canvas>
+                                    <div class="chart-overlay">
+                                        <span id="stat-daily-progress">0%</span>
+                                        <small>Metas</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="stat-pill">
+                                    <span class="stat-label">Ratio de Logro</span>
+                                    <span class="stat-value" id="stat-daily-count">0/0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE: VAULT -->
+            <section id="module-vault" class="module-pane">
+                <header class="page-header">
+                    <div class="header-content">
+                        <h1>Knowledge Vault</h1>
+                        <p>Base de datos neural y captura de conocimiento.</p>
+                    </div>
+                </header>
+                <div class="vault-execution-area">
+                    <div id="notes-grid" class="notes-grid"></div>
+                </div>
+            </section>
+
+            <!-- MODULE: SETTINGS -->
+            <section id="module-settings" class="module-pane">
+                <header class="page-header">
+                    <div class="header-content">
+                        <h1>Command Center</h1>
+                        <p>Configuración maestra del entorno.</p>
+                    </div>
+                </header>
+                <div class="settings-execution-area">
+                    <div class="settings-card">
+                        <h3>Identidad del Operador</h3>
+                        <div class="setting-item">
+                            <span>Nombre de Usuario</span>
+                            <input type="text" id="main-user-name" value="Elite Mode">
+                        </div>
+                        <div class="setting-item">
+                            <span>Sincronización de Nube</span>
+                            <input type="checkbox" checked>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <h3>Gestión de Almacenamiento</h3>
+                        <p>Todos los datos residen en el almacenamiento local cifrado del navegador.</p>
+                        <button class="btn-secondary" id="clear-data-btn">Resetear Sistema</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
